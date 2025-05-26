@@ -16,10 +16,11 @@ import com.paradise_seeker.game.entity.Player;
 import com.paradise_seeker.game.entity.monster.boss.Boss1;
 import com.paradise_seeker.game.entity.monster.creep.*;
 import com.paradise_seeker.game.entity.monster.elite.*;
-import com.paradise_seeker.game.entity.npc.*;
+import com.paradise_seeker.game.entity.npc.NPC1;
 import com.paradise_seeker.game.entity.object.*;
 import com.paradise_seeker.game.entity.Monster;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -34,7 +35,7 @@ public class GameMap {
     public float getMapHeight() {
         return MAP_HEIGHT;
     }
-    private Portal portal;
+    public Portal portal;
     private Texture backgroundTexture;
     private List<Collidable> collidables;
     private List<GameObject> gameObjects;
@@ -47,8 +48,6 @@ public class GameMap {
     private List<Skill1item> skill1Items = new ArrayList<>();
     private List<Skill2item> skill2Items = new ArrayList<>();
 	private List<NPC1> npcList = new ArrayList<>(); // Danh sách NPC
-	private List<NPC2> npc2List = new ArrayList<>();
-
     private float itemSpawnTimer = 0f;
     private static final float ITEM_SPAWN_INTERVAL = 120f;
 
@@ -77,12 +76,8 @@ public class GameMap {
         generateMonsters(player);
         generateRandomItems(5, 5);
         generateNPCs(); // ✅ Thêm dòng này
-        generateNPC2s(player);
-
 
         portal = new Portal(15f, 25f);
-        // Add the portal to your collision system
-        collidables.add(portal);
         // --- Load all "solid" rectangles, scale to world units, no Y flip ---
         for (MapLayer layer : tiledMap.getLayers()) {
             for (MapObject obj : layer.getObjects()) {
@@ -99,31 +94,31 @@ public class GameMap {
                         collidables.add(new SolidObject(fixedRect));
                     }
                 }
-            } 
-        }
-    }
-    private void generateNPC2s(Player player) {
-        Random random = new Random();
-        int npc2Count = 2;
-        for (int i = 0; i < npc2Count; i++) {
-            Rectangle bounds = generateNonOverlappingBounds(3f, 3f);
-            if (bounds != null) {
-                NPC2 npc2 = new NPC2(bounds.x, bounds.y, player);
-                npc2List.add(npc2);
-                // Không add vào collidables để không cản Player
-                occupiedAreas.add(new Rectangle(bounds));
             }
         }
     }
-
     private void generateNPCs() {
-        // Place the NPC at the bottom-left corner of the map
-        float npcX = 1f; // Bottom-left X + 1 coordinate
-        float npcY = 1f; // Bottom-left Y + 1 coordinate
-        NPC1 npc = new NPC1(npcX, npcY);
-        npcList.add(npc);
-        collidables.add(npc);
-        occupiedAreas.add(npc.getBounds());
+        Random random = new Random();
+        int npcCount = 2;
+        for (int i = 0; i < npcCount; i++) {
+            Rectangle bounds = generateNonOverlappingBounds(3f, 3f);
+            if (bounds != null) {
+                NPC1 npc = new NPC1(bounds.x, bounds.y);
+             // Gán hội thoại cho NPC
+                npc.setDialogue(Arrays.asList(
+                    "Gipsy: ...À, ta thấy cậu đang gặp khó khăn.",
+                    "Gipsy: 1. HP potion   2. MP potion   3. ATK potion",
+                    "Jack: ##Chọn phần thưởng",
+                    "Jack: Chờ đã, cậu là ai? Tại sao lại giúp tôi?",
+                    "Gipsy: Đôi khi, câu trả lời tốt nhất là không có câu trả lời nào cả..."
+                ));
+
+                npcList.add(npc);    
+                collidables.add(npc);
+
+                occupiedAreas.add(new Rectangle(bounds)); // Đánh dấu vùng đã chiếm
+            }
+        }
     }
 
     private void generateObjects() {
@@ -254,8 +249,6 @@ public class GameMap {
         for (Skill2item item : skill2Items) item.render(batch);
         for (Monster m : monsters) m.render(batch);
         for (NPC1 npc : npcList) npc.render(batch);
-        for (NPC2 npc2 : npc2List) npc2.render(batch);
-
         if (portal != null) portal.render(batch);
 
     }
@@ -264,7 +257,6 @@ public class GameMap {
     	for (NPC1 npc : npcList) {
     	    npc.update(deltaTime);
     	}
-    	for (NPC2 npc2 : npc2List) npc2.update(deltaTime);
 
         for (Monster m : monsters) m.update(deltaTime);
         hpItems.removeIf(item -> !item.isActive());
